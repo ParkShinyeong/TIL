@@ -1,0 +1,233 @@
+# [Event](https://javascript.info/introduction-browser-events#event-handlers)
+
+이벤트는 **브라우저에서 사용자의 행동에 따라 발생하는 일**들을 일컫는다.(클릭, 드래그하는 일 등) 모든 DOM 노드들은 그런 신호에 따라 일어나게 된다. 
+
+## Event handlers
+
+**이벤트에 반응**하기 위해, 우리는 **handler을 할당**할 수 있다. **이벤트의 경우에 따라 작동하는 함수**라고 볼 수 있다. 사용자의 행동의 경우에 따라 자바 스크립트가 동작하는 방식이다. 
+
+### Attribute vs addEventListener
+
+```jsx
+//옛날 방식 (attribute)
+elementDiv.onclick = function() {
+  console.log('fire/trigger property event handler)};
+
+//최근 방식 (addEventListener method)
+elementDiv.addEventListener('click', function() {
+  console.log('fire/trigger addEventListener')}, false); 
+```
+
+### `on<event>`
+
+이벤트 주체.on<event> = function {} (handler) 
+
+- onclick 프로퍼티 하나만 있으므로, 다른 이벤트 handler를 더 할당할 수 없다. 즉 **하나의 이벤트에 여러개의 handler을 할당할 수 없다.**
+
+```jsx
+<input type="button" id="elem" onclick="alert('Before')" value="Click me">
+<script>
+  elem.onclick = function() { // 기존 handler을 덮어쓴다. 
+    alert('After'); // 이 handler만 보이게 된다. 
+  };
+</script>
+```
+
+[+)  input의 value 속성](http://tcpschool.com/html-tag-attrs/input-value) ( input요소의 초기값을 명시한다.) 
+
+- **함수의 실행은 할당하지 않는다.**
+
+```jsx
+function sayThanks() {
+  alert('Thanks!'); 
+}
+
+elem.onclick = sayThanks;  //함수의 이름을 할당할 수 있다.   
+elem.onclick = sayThanks();  //함수의 실행을 할당하면 오류가 난다. 
+```
+
+함수의 실행을 할당할 시 오류가 나는 이유는, 함수 실행의 결과를 할당하는데 아무것도 리턴하지 않아서 `undefined`이고, 이를 `onclick`에도 할당할 시 작동하지 않기 때문이다. 
+
+그러나 마크업 언어(HTML)에서는 괄호가 필요하다. 
+
+```html
+<input type="button" id="button" onclick="sayThanks()"> 
+```
+
+```jsx
+button.onclick = function() {
+  sayThanks(); //속성 콘텐츠가 여기에 있다. 
+};  
+```
+
+이 차이는 브라우저가 속성을 읽을 때, 속성 콘텐츠에서 `body`를 처리하여 이것이 handler 함수를 만들기 때문이다. ,,?
+
+The difference is easy to explain. When the browser reads the attribute, it creates a handler function with body from the attribute content.
+
+- handler에 `setAttribute` 사용하지 말기 _작동하지 않는다.
+
+```jsx
+document.body.setAttribute('onclick', function() {alert(1)}); 
+```
+
+### `addEventListener`
+
+**element.addEventListener(event, handler, [options]);** 
+
+elementDiv(이벤트의 주체)에게 'click'(이벤트의 타입)이라는 이벤트가 발생하면 function(로직)을 실행시키겠다. 
+
+option - 부가적인 속성의 옵션 객체 
+
+- `once`: `true`이면, 실행된 후 listener이 자동으로 제거된다.
+- `capture`:  the phase where to handle the event, to be covered later in the chapter [Bubbling and capturing](https://javascript.info/bubbling-and-capturing). For historical reasons, `options` can also be `false/true`, that’s the same as `{capture: false/true}`.
+- `passive`: if `true`, then the handler will not call `preventDefault()`, we’ll explain that later in [Browser default actions](https://javascript.info/default-browser-action).
+
+- 여러 개의 handler을 사용할 수 있다.
+
+```jsx
+<input id="elem" type="button" value="Click me"/>
+
+<script>
+  function handler1() {
+    alert('Thanks'); 
+  }; 
+  function handler2() {
+    alert('Thanks again!'); 
+  }; 
+
+  elem.onclick = () => alert('Hello'); 
+  elem.addEventListener("click", handler1); //Thanks
+  elem.addEventListener("click", handler2); //Thanks again! 
+</script> 
+```
+
+`removeEventListener(event, handler, [options])` : handler을 제거할 때 사용 
+
+## Event object
+
+이벤트가 발생하면 **브라우저는 이벤트 객체를 생성**한다. 그리고 상세한 내용을 넣고, handler에게 전달인자로 넘긴다. 
+
+```jsx
+<input type="button" value="Click me" id="elem">
+<script>
+  elem.onclick = function(event) {
+    alert(**event.type** + "at" + **event.currentTarget**);  //click at [object HTMLInputElement]
+    alert("Coordinates: " + **event.clientX** + ":" + **event.clientY**); //Coordinates: 52:7
+  }; 
+</script>
+```
+
+**[event object의 속성]**
+
+- `event.type`: `click` 같은 이벤트의 타입
+- `event.currentTarget`:  이벤트를 다루는 element. `this`와 같다고 볼 수 있다. (화살표 함수가 아닐 때) , 또한 이것이 다른 무언가와 결합되어 있는 경우, `event.currentTarget`으로 부터 요소를 가져올 수 있다.
+- `event.target`: **이벤트가 전달한 객체에 대한 참조**이다. ( 이벤트 버블링, 캡처 단계에서 이벤트 handler을 호출하는 `event.currentTarget과 다르다. )
+- `event.clientX` / `event.clientY` : pointer event의, 커서의 Window-relative 좌표
+
+이 외에도 다른 속성들이 더 있다. 
+
+`**event.target.textContent**`
+
+사용자가 버튼을 클릭하면, 그 버튼의 textContent( 또는 innerHTML)을 이용해 버튼의 값을 가져올 수 있다. 누른 버튼에 따라 출력 이름이 달라질 수도 있다. 클릭된 이벤트 객체에서 값을 가져온다. 
+
+```html
+<body>
+    <button>아메리카노</button>
+    <button>카페라떼</button>
+
+    <script>
+      let menus = document.querySelectorAll("button"); //모든 버튼을 가져옵니다.
+
+      let Americano = menus[0];
+      let Caffelatte = menus[1];
+
+      function handleClick() {
+        let currentMenu = **event.target.textContent** // TODO
+        console.log(currentMenu + "를 클릭하셨습니다.");
+      }
+
+      Americano.onclick = handleClick;
+      Caffelatte.onclick = handleClick; 
+    </script>
+  </body>
+```
+
+아메리카노 클릭 → '아메리카노를 클릭하셨습니다'
+
+카페라떼 클릭 → '카페라떼를 클릭하셨습니다' 
+
+---
+
+## handleEvent
+
+단순히 function뿐만 아니라, 객체를 이벤트 handler로 할당해줄 수 있다. 이벤트가 발생할 때, `handleEvent` 메소드가 요청된다. 
+
+```jsx
+<button id="elem">Click me</button> 
+
+<script>
+  let obj = {
+    **handleEvent(event)** {
+      alert(event.type + "at" + event.currentTArget); //click at [object HTMLButtonElement]
+    }
+  };
+
+elem.addEventListener('click', **obj**); 
+</script> 
+```
+
+`addEventListener`이 객체를 handler로 받았다. 이를 `obj.handleEvent(event)`로 요청한다.  
+
+### Event type
+
+대표적인 이벤트 종류를 간단히 정리해보았다. 
+
+`load`: 파일(HTML, page, image, CSS, frameset, <object>, JavaScriptfile 등)이 모두 로딩 되고 끝났을 때 다 끝났음을 보여줌 
+
+`scroll`: 스크롤 할 때 
+
+`resize`: 화면 사이즈를 줄이고 키우고 할 때 
+
+`blur`: 어떤 요소를 포커스 할 때 다른 것을 선택할 때? 
+
+`focus`: 어떤 것을 클릭하거나, 포커스 상태일 때 
+
+`change`: input이나 textarea의 값이 바뀌었을 때 
+
+`submit`: submit 버튼을 눌렀을 때 
+
+`click`: 클릭했을 때 
+
+`mousedown`: 마우스가 눌려졌을 때 
+
+`mouseenter`: 어떤 요소에 마우스가 들어갔냐
+
+`mouseleave`: 어떤 요소에 마우스가 진입했다 나가냐
+
+`mouseup`: 마우스 down 했다가 손 뗄 때 
+
+`mouseover`
+
+`keydown`: 특정 키를 눌렀을 때 (ex) esc) 
+
+`keyup`
+
+`DOMContentLoaded`
+
+`event.preventDefault`
+
+모바일에서 
+
+`touchstart`
+
+`touchend`
+
+`touchmove`
+
+`touchenter`
+
+`touchleave`
+
+`touchancel` 등으로 대체된다. 
+
+`
